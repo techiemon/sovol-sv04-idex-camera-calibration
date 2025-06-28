@@ -37,23 +37,28 @@ function computeOffsets() {
   const x1 = document.getElementById("x1Field").value;
   const y0 = document.getElementById("y0Field").value;
   const y1 = document.getElementById("y1Field").value;
+  const z0 = document.getElementById("z0Field").value;
+  const z1 = document.getElementById("z1Field").value;
 
 
   // Calculate differences and format to 2 decimal places
   let dx1 = (x0 - x1).toFixed(2);
   let dy1 = (y0 - y1).toFixed(2);
+  let dz1 = (z0 - z1).toFixed(2);
 
   // Only show separators if the values exist
   let sep1 = x1 !== "" ? " / " : "";
 
-  if (x1 === "") { dx1 = ""; dy1 = ""; }
+  if (x1 === "") { dx1 = ""; dy1 = ""; dz1 = ""; }
 
   // Build output strings
   const xResult = dx1 + sep1;
   const yResult = dy1 + sep1;
+    const zResult = dz1 + sep1;
 
   document.getElementById("calibrationXVal").value = xResult;
   document.getElementById("calibrationYVal").value = yResult;
+  document.getElementById("calibrationZVal").value = zResult;
 }
 
 /**
@@ -136,8 +141,12 @@ function handleState() {
       document.getElementById("x1Field").value = "";
       document.getElementById("y0Field").value = "";
       document.getElementById("y1Field").value = "";
+      document.getElementById("z0Field").value = "";
+      document.getElementById("z1Field").value = "";
       document.getElementById("calibrationXVal").value = "";
       document.getElementById("calibrationYVal").value = "";
+      document.getElementById("calibrationZVal").value = "";
+      document.getElementById("textBoxArea").innerHTML = "Welcome. You need to connect to a camera to begin. Reload the page after connecting to a camera.";
       break;
     case 1:
       document.getElementById("textBoxArea").innerHTML =
@@ -158,12 +167,12 @@ function handleState() {
     case 4:
       document.getElementById("textBoxArea").innerHTML =
         "Place the bed camera on the bed and drive E0 until visible.<br><br>" +
-        "Rotate the lens to focus the camera and adjust exposure if required.";
+        "Move the Z axis down to the sharpest focus, do no go below 25mm or you will crash into the lense. Record that value as E0-Z.";
       break;
     case 5:
       document.getElementById("textBoxArea").innerHTML =
         "Move E0 until centered in the crosshair.<br><br>" +
-        "Enter the absolute X and Y position into the fields below.";
+        "Enter the absolute X, Y, Z position into the fields below.";
       break;
     case 6:
       document.getElementById("textBoxArea").innerHTML =
@@ -172,8 +181,8 @@ function handleState() {
     case 7:
       document.getElementById("textBoxArea").innerHTML =
         "Move E1 until centered in the crosshair.<br><br>" +
-        "Enter the absolute X and Y position into the fields below.<br><br>" +
-        "Repeat for remaining extruders if any.";
+        "Move the Z axis down to the sharpest focus, do no go below 25mm or you will crash into the lense. Record that value as E1-Z.";
+        "Enter the absolute X, Y, Z position into the fields below.<br><br>";
       document.getElementById("startBtn").disabled = false;
       document.getElementById("calibrationXVal").value = "";
       document.getElementById("calibrationYVal").value = "";
@@ -182,8 +191,9 @@ function handleState() {
       computeOffsets();
       document.getElementById("textBoxArea").innerHTML =
         "CALIBRATION COMPLETE!<br><br>" +
-        "Enter the offset values into your printer or slicer.<br><br>" +
-        "If you are having trouble calibrating, check our user manual for troubleshooting.";
+        "Enter the X,Y offset values into your printer or slicer save and home.<br><br>" +
+        "Calibrate your Z indexes manually via the bed and E1 Z adjustment screw and retest.<br><br>" +
+        "I suggest you turn your printer off and on to ensure the new values are loaded.";
       document.getElementById("startBtn").disabled = true;
       document.getElementById("backBtn").disabled = false;
       document.getElementById("resetBtn").disabled = false;

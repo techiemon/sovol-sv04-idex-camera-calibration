@@ -46,16 +46,24 @@
       <button id="backBtn" onclick="handleBack()" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold px-6 py-2 rounded transition" disabled>Back</button>
       <button id="resetBtn" onclick="handleReset()" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded transition" disabled>Reset</button>
     </div>
-    <div id="textBoxArea" class="text-sm border-2 border-gray-200 rounded p-4 mb-8 w-full min-h-[100px] bg-gray-100"></div>
+    <div id="textBoxArea" class="text-sm border-2 border-gray-200 rounded p-4 mb-8 w-full min-h-[100px] bg-gray-100">
+      Welcome. You need to connect to a camera to begin. 
+      Reload the page after connecting to a camera.
+    </div>
     <form class="flex flex-col gap-4 w-full mb-6">
       <div class="flex flex-col md:flex-row gap-4 w-full">
-        <div class="flex flex-col w-full md:w-1/2">
+        <div class="flex flex-col w-full md:w-1/3">
           <label for="x0Field" class="font-semibold">E0-X</label>
           <input type="number" name="x0Field" id="x0Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
         </div>
-        <div class="flex flex-col w-full md:w-1/2">
+        <div class="flex flex-col w-full md:w-1/3">
           <label for="y0Field" class="font-semibold">E0-Y</label>
           <input type="number" name="y0Field" id="y0Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+        <div class="flex flex-col w-full md:w-1/3">
+          <label for="z0Field" class="font-semibold">E0-Z</label>
+          <input type="number" name="z0Field" id="z0Field" step="0.01" value="" onchange="setDecimalPlaces(this)"
+            class="border border-gray-300 rounded px-3 py-2">
         </div>
       </div>
       <div class="flex flex-col md:flex-row gap-4 w-full">
@@ -66,6 +74,11 @@
         <div class="flex flex-col w-full md:w-1/2">
           <label for="y1Field" class="font-semibold">E1-Y</label>
           <input type="number" name="y1Field" id="y1Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+        <div class="flex flex-col w-full md:w-1/2">
+          <label for="z1Field" class="font-semibold">E1-Z</label>
+          <input type="number" name="z1Field" id="z1Field" step="0.01" value="" onchange="setDecimalPlaces(this)"
+            class="border border-gray-300 rounded px-3 py-2">
         </div>
       </div>
     </form>
@@ -81,6 +94,10 @@
           <label for="calibrationYVal" class="font-semibold">Y</label>
           <input type="text" id="calibrationYVal" name="calibrationYVal" readonly class="border border-gray-300 rounded px-3 py-2 w-32 text-center bg-gray-50">
         </div>
+        <div class="flex flex-col items-center">
+          <label for="calibrationZVal" class="font-semibold">Z</label>
+          <input type="text" id="calibrationZVal" name="calibrationZVal" readonly class="border border-gray-300 rounded px-3 py-2 w-32 text-center bg-gray-50">
+        </div>
       </div>
     </div>
   </div>
@@ -94,7 +111,7 @@
       await navigator.mediaDevices.getUserMedia({ video: true });
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter(device => device.kind === 'videoinput');
-      console.log('cameras', cameras);
+
       const cameraSelect = document.getElementById('cameraSelectBox');
       cameraSelect.innerHTML = '';
 
@@ -123,7 +140,6 @@
     // Listen for camera selection changes
     function onCameraSelectChange() {
       const cameraId = document.getElementById('cameraSelectBox').value;
-      console.log('cameraId', cameraId);
       localStorage.setItem('defaultCameraId', cameraId);
       startSelectedCamera(cameraId);
     }
