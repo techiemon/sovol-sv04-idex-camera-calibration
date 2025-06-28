@@ -6,6 +6,9 @@ This cheepo Digital Microscope Handheld 2.0 inch IPS Color Screen for kids is wh
  https://www.amazon.com/dp/B0F4K15YXS
 ---
 
+<img width="1000" alt="Screenshot 2025-06-28 at 6 33 05 PM" src="https://github.com/user-attachments/assets/0b739da8-d66a-4d0c-b309-b1856638b9d9" />
+
+
 ## Features
 - **Camera Selection:** Choose any connected camera from a dropdown menu. Your preferred camera is saved and used by default on your next visit.
 - **Live Video Stream:** View the selected camera with zoom and exposure controls.
