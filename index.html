@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovol SV04 Camera XY Calibration</title>
+  <script src="index.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: sans-serif; }
+    #videoContainer { position: relative; }
+    #crosshairOverlay {
+      position: absolute;
+      width: 144px;
+      height: 144px;
+      left: 242px;
+      top: 166px;
+      pointer-events: none;
+    }
+    #videoStream {
+      background-color: #000;
+      width: 720px;
+      height: 540px;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-start py-8">
+  <div class="w-full max-w-[720px] bg-white shadow-md rounded-lg p-8 flex flex-col items-center">
+    <h2 class="text-2xl font-extrabold mb-6 text-center">Camera Assisted XY Offset Calibration</h2>
+    <div class="w-full flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <label for="cameraSelectBox" class="font-semibold text-gray-700">Choose Camera:</label>
+      <select id="cameraSelectBox" class="border border-gray-300 rounded px-3 py-2 w-full md:w-auto"></select>
+    </div>
+    <div id="videoContainerBox" class="relative mx-auto mb-6" style="width:720px; height:450px;">
+      <video autoplay="true" id="videoFeed" class="rounded shadow w-full h-full object-cover"></video>
+      <img id="crosshairOverlayImg" src="images/Crosshair.png" alt="Image crosshair" class="pointer-events-none absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" style="width:100px; height:100px;" />
+    </div>
+    <div class="flex flex-wrap gap-4 justify-center mb-6">
+      <button onclick="handleZoomIn()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded transition">Zoom In</button>
+      <button onclick="handleZoomOut()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded transition">Zoom Out</button>
+      <input onclick="handleExposure()" id="exposureSliderBar" type="range" min="0" max="20" value="10" class="w-40 align-middle">
+    </div>
+    <div class="flex flex-wrap gap-4 mb-6">
+      <button id="startBtn" onclick="handleStart()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded transition">Start</button>
+      <button id="backBtn" onclick="handleBack()" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold px-6 py-2 rounded transition" disabled>Back</button>
+      <button id="resetBtn" onclick="handleReset()" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded transition" disabled>Reset</button>
+    </div>
+    <div id="textBoxArea" class="text-sm border-2 border-gray-200 rounded p-4 mb-8 w-full min-h-[100px] bg-gray-100"></div>
+    <form class="flex flex-col gap-4 w-full mb-6">
+      <div class="flex flex-col md:flex-row gap-4 w-full">
+        <div class="flex flex-col w-full md:w-1/2">
+          <label for="x0Field" class="font-semibold">E0-X</label>
+          <input type="number" name="x0Field" id="x0Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+        <div class="flex flex-col w-full md:w-1/2">
+          <label for="y0Field" class="font-semibold">E0-Y</label>
+          <input type="number" name="y0Field" id="y0Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+      </div>
+      <div class="flex flex-col md:flex-row gap-4 w-full">
+        <div class="flex flex-col w-full md:w-1/2">
+          <label for="x1Field" class="font-semibold">E1-X</label>
+          <input type="number" name="x1Field" id="x1Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+        <div class="flex flex-col w-full md:w-1/2">
+          <label for="y1Field" class="font-semibold">E1-Y</label>
+          <input type="number" name="y1Field" id="y1Field" step="0.01" value="" onchange="setDecimalPlaces(this)" class="border border-gray-300 rounded px-3 py-2">
+        </div>
+      </div>
+    </form>
+    <div class="w-full flex flex-col items-center mb-2">
+      <hr class="w-full border-t-2 border-gray-200 my-4">
+      <div class="font-semibold text-gray-700 mb-2">E1 Offsets Needed</div>
+      <div class="flex flex-wrap gap-6 w-full justify-center">
+        <div class="flex flex-col items-center">
+          <label for="calibrationXVal" class="font-semibold">X</label>
+          <input type="text" id="calibrationXVal" name="calibrationXVal" readonly class="border border-gray-300 rounded px-3 py-2 w-32 text-center bg-gray-50">
+        </div>
+        <div class="flex flex-col items-center">
+          <label for="calibrationYVal" class="font-semibold">Y</label>
+          <input type="text" id="calibrationYVal" name="calibrationYVal" readonly class="border border-gray-300 rounded px-3 py-2 w-32 text-center bg-gray-50">
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    var currentZoomValue = 1,
+      currentState = 0;
+
+    // --- Camera Selection Dropdown Logic ---
+    async function populateCameraDropdown() {
+      // Request permission to access cameras
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      console.log('cameras', cameras);
+      const cameraSelect = document.getElementById('cameraSelectBox');
+      cameraSelect.innerHTML = '';
+
+      // Get saved camera from localStorage
+      const savedCameraId = localStorage.getItem('defaultCameraId');
+      let foundSaved = false;
+
+      cameras.forEach((camera, idx) => {
+        const option = document.createElement('option');
+        option.value = camera.deviceId;
+        option.text = camera.label || `Camera ${idx + 1}`;
+        if (savedCameraId && camera.deviceId === savedCameraId) {
+          option.selected = true;
+          foundSaved = true;
+        }
+        cameraSelect.appendChild(option);
+      });
+
+      // If no saved camera, save the first one
+      if (!foundSaved && cameras.length > 0) {
+        localStorage.setItem('defaultCameraId', cameras[0].deviceId);
+      }
+      onCameraSelectChange();
+    }
+
+    // Listen for camera selection changes
+    function onCameraSelectChange() {
+      const cameraId = document.getElementById('cameraSelectBox').value;
+      console.log('cameraId', cameraId);
+      localStorage.setItem('defaultCameraId', cameraId);
+      startSelectedCamera(cameraId);
+    }
+
+    document.getElementById('cameraSelectBox').addEventListener('change', onCameraSelectChange);
+
+    // Start streaming from the selected camera
+    async function startSelectedCamera(cameraId) {
+      const constraints = {
+        video: { deviceId: { exact: cameraId } }
+      };
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        document.getElementById('videoFeed').srcObject = stream;
+      } catch (error) {
+        alert('Could not access the selected camera.');
+        console.log(error);
+      }
+    }
+
+    // Override cameraConnect to use selected camera
+    async function cameraConnect() {
+      await populateCameraDropdown();
+      const cameraId = localStorage.getItem('defaultCameraId');
+      if (cameraId) {
+        startSelectedCamera(cameraId);
+      }
+    }
+
+    cameraConnect();
+  </script>
+
+</body>
+
+</html>
